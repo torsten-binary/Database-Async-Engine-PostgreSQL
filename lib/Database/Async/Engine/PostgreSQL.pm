@@ -38,6 +38,8 @@ sub connect {
     # parameters. Eventually we also want to support UNIX
     # socket and other types.
     my $uri = $self->uri;
+    my $endpoint = join ':', $uri->host, $uri->port; 
+    $log->tracef('Will connect to %s', $endpoint);
     $self->{connection} //= $self->loop->connect(
         service		=> $uri->port,
         host		=> $uri->host,
@@ -47,6 +49,7 @@ sub connect {
         # Once we have a TCP connection, we'd usually do
         # some form of TLS here. For now, plain text is good
         # enough.
+        $log->tracef('Connected to %s', $endpoint);
         $self->add_child(
             my $stream = IO::Async::Stream->new(
                 handle => $sock,
@@ -54,6 +57,7 @@ sub connect {
             )
         );
         Scalar::Util::weaken($self->{stream} = $stream);
+        $log->tracef('Send initial request with user %s', $uri->user);
         $self->protocol->initial_request(
             application_name => 'whatever',
             # replication      => 'database',
@@ -99,8 +103,17 @@ sub on_read {
 sub protocol {
     my ($self) = @_;
     $self->{protocol} //= do {
-        my $pg = Protocol::PostgreSQL::Client->new;
+        my $pg = Protocol::PostgreSQL::Client->new(
+            database => $self->uri->dbname
+        );
         $pg->bus->subscribe_to_event(
+            password => $self->$curry::weak(sub {
+                my ($self, $ev, %args) = @_;
+                $log->tracef('Auth request received: %s', \%args);
+                $self->protocol->{user} = $self->uri->user;
+                $self->protocol->send_message('PasswordMessage', password => $self->uri->password);
+                $ev->unsubscribe; # single-shot event
+            }),
             parameter_status => $self->$curry::weak(sub {
                 my ($self, $ev, %args) = @_;
                 $log->tracef('Parameter received: %s', $args{status});
