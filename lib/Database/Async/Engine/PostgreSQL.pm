@@ -72,10 +72,7 @@ sub uri_for_dsn {
     die 'invalid DSN, expecting DBI:Pg:...' unless $dsn =~ s/^DBI:Pg://i;
     my %args = split /[=;]/, $dsn;
     my $uri = URI->new('postgresql://postgres@localhost/postgres');
-    $uri->host(delete $args{host}) if exists $args{host};
-    $uri->user(delete $args{user}) if exists $args{user};
-    $uri->password(delete $args{password}) if exists $args{password};
-    $uri->dbname(delete $args{dbname}) if exists $args{dbname};
+    $uri->$_(delete $args{$_}) for grep exists $args{$_}, qw(host port user password dbname);
     $uri
 }
 
