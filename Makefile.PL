@@ -2,32 +2,52 @@
 use strict;
 use warnings;
 
-use 5.010001;
+use 5.006;
 
-use ExtUtils::MakeMaker 6.48;
+use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "PostgreSQL support for Database::Async",
   "AUTHOR" => "Tom Molesworth <TEAM\@cpan.org>",
   "CONFIGURE_REQUIRES" => {
-    "ExtUtils::MakeMaker" => "6.48"
+    "ExtUtils::MakeMaker" => 0
   },
   "DISTNAME" => "Database-Async-Engine-PostgreSQL",
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.010001",
+  "MIN_PERL_VERSION" => "5.006",
   "NAME" => "Database::Async::Engine::PostgreSQL",
   "PREREQ_PM" => {
+    "Database::Async::Engine" => 0,
     "Future" => "0.38",
+    "Future::AsyncAwait" => 0,
+    "IO::Async::SSL" => 0,
+    "IO::Socket::SSL" => 0,
+    "Log::Any" => 0,
     "Protocol::PostgreSQL" => 0,
+    "Protocol::PostgreSQL::Client" => 0,
+    "Protocol::PostgreSQL::Constants" => 0,
+    "Ryu::Async" => 0,
+    "Scalar::Util" => 0,
+    "URI::QueryParam" => 0,
+    "URI::postgres" => 0,
     "URI::postgresql" => 0,
     "curry" => 0,
-    "parent" => 0
+    "indirect" => 0,
+    "overload" => 0,
+    "parent" => 0,
+    "strict" => 0,
+    "warnings" => 0
   },
   "TEST_REQUIRES" => {
+    "Database::Async" => 0,
+    "ExtUtils::MakeMaker" => 0,
     "File::Spec" => 0,
+    "IO::Async::Loop" => 0,
     "IO::Handle" => 0,
     "IPC::Open3" => 0,
+    "Log::Any::Adapter" => 0,
     "Test::CheckDeps" => "0.010",
+    "Test::Deep" => 0,
     "Test::Fatal" => "0.010",
     "Test::More" => "0.98",
     "Test::PostgreSQL" => "1.26",
@@ -41,19 +61,39 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
+  "Database::Async" => 0,
+  "Database::Async::Engine" => 0,
+  "ExtUtils::MakeMaker" => 0,
   "File::Spec" => 0,
   "Future" => "0.38",
+  "Future::AsyncAwait" => 0,
+  "IO::Async::Loop" => 0,
+  "IO::Async::SSL" => 0,
   "IO::Handle" => 0,
+  "IO::Socket::SSL" => 0,
   "IPC::Open3" => 0,
+  "Log::Any" => 0,
+  "Log::Any::Adapter" => 0,
   "Protocol::PostgreSQL" => 0,
+  "Protocol::PostgreSQL::Client" => 0,
+  "Protocol::PostgreSQL::Constants" => 0,
+  "Ryu::Async" => 0,
+  "Scalar::Util" => 0,
   "Test::CheckDeps" => "0.010",
+  "Test::Deep" => 0,
   "Test::Fatal" => "0.010",
   "Test::More" => "0.98",
   "Test::PostgreSQL" => "1.26",
   "Test::Refcount" => "0.07",
+  "URI::QueryParam" => 0,
+  "URI::postgres" => 0,
   "URI::postgresql" => 0,
   "curry" => 0,
-  "parent" => 0
+  "indirect" => 0,
+  "overload" => 0,
+  "parent" => 0,
+  "strict" => 0,
+  "warnings" => 0
 );
 
 

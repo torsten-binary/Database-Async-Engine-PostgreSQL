@@ -1,16 +1,21 @@
 requires 'parent', 0;
-requires 'curry', 0;
+requires 'indirect', 0;
+requires 'curry', '>= 1.001';
 requires 'Future', '>= 0.38';
-# requires 'Database::Async', 0;
-requires 'URI::postgresql', 0;
+requires 'Log::Any', '>= 1.050';
+requires 'Ryu::Async', '>= 0.014';
+requires 'Database::Async', 0;
+requires 'URI::postgres', 0;
+requires 'URI::QueryParam', 0;
+requires 'Future::AsyncAwait', '>= 0.21';
 
-requires 'Protocol::PostgreSQL', 0;
+requires 'Protocol::PostgreSQL', '>= 0.001';
 
 on 'test' => sub {
 	requires 'Test::More', '>= 0.98';
 	requires 'Test::Fatal', '>= 0.010';
 	requires 'Test::Refcount', '>= 0.07';
-	requires 'Test::PostgreSQL', '>= 1.26';
+	suggests 'Test::PostgreSQL', '>= 1.26';
 };
 
 on 'develop' => sub {
