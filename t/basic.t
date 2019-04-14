@@ -6,11 +6,13 @@ no indirect;
 
 use Test::More;
 use Test::Fatal;
+use Test::Deep;
 use Future::AsyncAwait;
 use IO::Async::Loop;
 use Database::Async;
 use Database::Async::Engine::PostgreSQL;
 use Log::Any::Adapter qw(TAP);
+use Log::Any qw($log);
 
 my $pg = eval {
     require Test::PostgreSQL;
@@ -31,77 +33,70 @@ is(exception {
     );
 }, undef, 'can safely add to the loop');
 
-subtest 'can do more queries' => sub {
-    is(exception {
-        $db->query(q{select 'example'})
-            ->single
-            ->each(sub {
-                is($_, 'example', 'had expected result');
-            });
-        $db->idle->get;
-        note 'try for output';
-        $db->query(q{select 'output' where 1 = $1}, '1')
-            ->each(sub {
-                is($_, 'output', 'had expected result');
-            })->await;
-        note 'try for more output';
-        $db->query(q{select 'more output' where 1 = $1}, '0')
-            ->each(sub {
-                fail('was not expecting anything');
-            })->await;
+(async sub {
+    $log->debugf('Execute single query');
+    $log->infof('Have result: %s', await $db->query('select 1')->single);
+    $log->debugf('Start a transaction');
+    await $db->query('begin')->void;
+    $log->debugf('Execute another single query within transaction');
+    $log->infof('Have result: %s', await $db->query('select 1')->single);
+    $log->debugf('Create a temporary table');
+    await $db->query(q{create temporary table roundtrip_one ( id bigserial not null primary key, name text, created timestamptz default 'now')})->void;
+    $log->debugf('Populate some rows in that table');
+    await $db->query('insert into roundtrip_one (name) select generate_series(1,100)')->void;
+    $log->infof('First 5 rows:');
+    await $db->query('select * from roundtrip_one order by id limit 5')
+        ->row_hashrefs
+        ->map(sub {
+            my ($row) = @_;
+            cmp_deeply($row, {
+                id => ignore(),
+                name => ignore(),
+                created => re(qr/^\d{4}-\d{2}-\d{2}/),
+            }, 'have something that looks roughly correct in the hashref output');
+        })
+        ->completed;
+    $log->infof('First 5 rows as arrayrefs:');
+    await $db->query('select id, name, created from roundtrip_one order by id limit 5')
+        ->row_arrayrefs
+        ->map(sub {
+            $log->infof(
+                'ID %s has name %s with creation date %s',
+                @$_
+            )
+        })
+        ->completed;
+    $log->infof('First 5 rows via COPY:');
+    await $db->query('copy (select id, name, created from roundtrip_one order by id limit 5) to stdout')
+        ->row_arrayrefs
+        ->map(sub {
+            $log->infof(
+                'ID %s has name %s with creation date %s',
+                @$_
+            )
+        })
+        ->completed;
+    $log->infof('Copy data in');
+    my $src = Ryu::Source->new;
+    my $f = $db->query('copy roundtrip_one(name) from stdin')
+        ->from($src)
+        ->completed;
+    $src->emit([$_]) for qw(first second third);
+    $src->finish;
+    await $f;
 
-        note 'try for no output';
-        $db->query(q{})
-            ->each(sub {
-                fail('was not expecting anything');
-            })->await;
-
-        note 'invalid query';
-        $db->query(q{select missing_column from table_not_found})
-            ->each(sub {
-                fail('was not expecting anything');
-            })->completed
-            ->on_ready(sub {
-                my ($f) = @_;
-                note explain [ $f->failure ];
-                is($f->state, 'failed', 'failed correctly');
-                isa_ok($f->failure, 'Protocol::Database::PostgreSQL::Error');
-            })->await;
-        note 'in at the end';
-    }, undef, 'connection works');
-};
-
-subtest 'can connect and run a query' => sub {
-    my $expected_state = '';
-    $uri->query_param(sslmode => 'prefer');
-    $loop->add(
-        my $db = Database::Async::Engine::PostgreSQL->new(
-            uri => $uri,
-        )
-    );
-    $db->ready_for_query
-       ->subscribe(my $code = sub {
-            is(shift, $expected_state, 'readiness state matched');
-        });
-    my $expect_ready = sub {
-        $expected_state = shift;
-    };
-    is(exception {
-        $db->connect->get;
-        $expect_ready->('I');
-        note 'Await authenticated status';
-        $db->authenticated->get;
-        note 'Authentication complete';
-        $expect_ready->('');
-        $db->simple_query(q{select 1})
-            ->each(sub {
-                is($_, '1', 'had expected result');
-            });
-        note 'Awaiting idle';
-        $expect_ready->('I');
-        $db->idle->get;
-    }, undef, 'connection works');
-    $db->ready_for_query->unsubscribe($code);
-};
+    $log->infof('Find those rows again:');
+    await $db->query(q{select * from roundtrip_one where name in ('first', 'second', 'third') order by id})
+        ->row_hashrefs
+        ->map(sub {
+            $log->infof(
+                'ID %s has name %s with creation date %s',
+                $_->{id}, $_->{name}, $_->{created}
+            )
+        })
+        ->completed;
+    $log->infof('Roll back');
+    await $db->query('rollback')->void;
+})->()->get;
 done_testing;
 
