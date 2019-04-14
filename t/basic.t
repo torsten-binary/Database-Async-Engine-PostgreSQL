@@ -8,6 +8,7 @@ use Test::More;
 use Test::Fatal;
 use Future::AsyncAwait;
 use IO::Async::Loop;
+use Database::Async;
 use Database::Async::Engine::PostgreSQL;
 use Log::Any::Adapter qw(TAP);
 
@@ -24,41 +25,16 @@ my $db;
 is(exception {
     $uri->query_param(sslmode => 'prefer');
     $loop->add(
-        $db = Database::Async::Engine::PostgreSQL->new(
+        $db = Database::Async->new(
             uri => $uri,
         )
     );
 }, undef, 'can safely add to the loop');
 
-subtest 'can connect and run a query' => sub {
-    my $expected_state = '';
-    $db->ready_for_query
-       ->subscribe(my $code = sub {
-            is(shift, $expected_state, 'readiness state matched');
-        });
-    my $expect_ready = sub {
-        $expected_state = shift;
-    };
-    is(exception {
-        $db->connect->get;
-        $expect_ready->('I');
-        note 'Await authenticated status';
-        $db->authenticated->get;
-        note 'Authentication complete';
-        $expect_ready->('');
-        $db->simple_query(q{select 1})
-            ->each(sub {
-                is($_, '1', 'had expected result');
-            });
-        note 'Awaiting idle';
-        $expect_ready->('I');
-        $db->idle->get;
-    }, undef, 'connection works');
-    $db->ready_for_query->unsubscribe($code);
-};
 subtest 'can do more queries' => sub {
     is(exception {
-        $db->simple_query(q{select 'example'})
+        $db->query(q{select 'example'})
+            ->single
             ->each(sub {
                 is($_, 'example', 'had expected result');
             });
@@ -95,5 +71,37 @@ subtest 'can do more queries' => sub {
     }, undef, 'connection works');
 };
 
+subtest 'can connect and run a query' => sub {
+    my $expected_state = '';
+    $uri->query_param(sslmode => 'prefer');
+    $loop->add(
+        my $db = Database::Async::Engine::PostgreSQL->new(
+            uri => $uri,
+        )
+    );
+    $db->ready_for_query
+       ->subscribe(my $code = sub {
+            is(shift, $expected_state, 'readiness state matched');
+        });
+    my $expect_ready = sub {
+        $expected_state = shift;
+    };
+    is(exception {
+        $db->connect->get;
+        $expect_ready->('I');
+        note 'Await authenticated status';
+        $db->authenticated->get;
+        note 'Authentication complete';
+        $expect_ready->('');
+        $db->simple_query(q{select 1})
+            ->each(sub {
+                is($_, '1', 'had expected result');
+            });
+        note 'Awaiting idle';
+        $expect_ready->('I');
+        $db->idle->get;
+    }, undef, 'connection works');
+    $db->ready_for_query->unsubscribe($code);
+};
 done_testing;
 
