@@ -669,7 +669,7 @@ Query sequence is essentially:
 =over 4
 
 =item * receive C<ReadyForQuery>
- 
+
 =item * send C<frontend_query>
 
 =item * Row Description
