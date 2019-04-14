@@ -40,6 +40,8 @@ Database::Async::Engine->register_class(
     postgresql => __PACKAGE__
 );
 
+=head1 METHODS
+
 =head2 connection
 
 Returns a L<Future> representing the database connection,
@@ -516,12 +518,6 @@ sub protocol {
                 copy_done => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
                     $log->tracef('Copy done - %s', $msg);
-#                    my $query = delete $self->{active_query} or do {
-#                        $log->warnf('Copy done but no query');
-#                        return;
-#                    };
-#                    $log->tracef('Copy done for query %s', $query);
-#                    $query->done
                 }),
                 sub { $log->errorf('Unknown message %s (type %s)', $_, $_->type) }
             );
@@ -670,16 +666,23 @@ __END__
 
 Query sequence is essentially:
 
- - < ReadyForQuery
- - > frontend_query
- - < Row Description
- - < Data Row
- - < Command Complete
- - < ReadyForQuery
+=over 4
 
-The DB creates an engine.
-The engine does whatever connection handling required, and eventually
-should reach a "ready" state.
+=item * receive C<ReadyForQuery>
+ 
+=item * send C<frontend_query>
+
+=item * Row Description
+
+=item * Data Row
+
+=item * Command Complete
+
+=item * ReadyForQuery
+
+=back
+
+The DB creates an engine.  The engine does whatever connection handling required, and eventually should reach a "ready" state.
 Once this happens, it'll notify DB to say "this engine is ready for queries".
 If there are any pending queries, the next in the queue is immediately assigned
 to this engine.
@@ -691,9 +694,15 @@ They start in the pending state.
 
 Any of the following:
 
-- tx
-- query
-- copy etc.
+=over 4
+
+=item * tx
+
+=item * query
+
+=item * copy etc.
+
+=back
 
 is treated as "queue request". It indicates that we're going to send one or
 more commands over a connection.
@@ -702,8 +711,7 @@ L</next_engine> resolves with an engine instance:
 
 =over 4
 
-=item * check for engines in `available` queue - these are connected and waiting,
-and can be assigned immediately
+=item * check for engines in `available` queue - these are connected and waiting, and can be assigned immediately
 
 =item * next look for engines in `unconnected` - these are instantiated but need
 a ->connection first
