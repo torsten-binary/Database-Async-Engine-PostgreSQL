@@ -40,14 +40,56 @@ Database::Async::Engine->register_class(
     postgresql => __PACKAGE__
 );
 
+=head2 connection
+
+Returns a L<Future> representing the database connection,
+and will attempt to connect if we are not already connected.
+
+=cut
+
 sub connection {
     my ($self) = @_;
     $self->{connection} //= $self->connect;
 }
 
+=head2 ssl
+
+Whether to try SSL or not, expected to be one of the following
+values from L<Protocol::Database::PostgreSQL::Constants>:
+
+=over 4
+
+=item * C<SSL_REQUIRE>
+
+=item * C<SSL_PREFER>
+
+=item * C<SSL_DISABLE>
+
+=back
+
+=cut
+
 sub ssl { shift->{ssl} }
 
+=head2 read_len
+
+Buffer read length. Higher values mean we will attempt to read more
+data for each I/O loop iteration.
+
+Defaults to 2 megabytes.
+
+=cut
+
 sub read_len { shift->{read_len} //= 2 * 1024 * 1024 }
+
+=head2 connect
+
+Establish a connection to the server.
+
+Returns a L<Future> which resolves to the L<IO::Async::Stream>
+once ready.
+
+=cut
 
 async sub connect {
     my ($self) = @_;
@@ -104,12 +146,28 @@ async sub connect {
     delete $qp{sslmode};
     $qp{application_name} //= 'Database::Async';
     $self->protocol->send_startup_request(
-        database         => $uri->dbname,
-        user             => $uri->user,
+        database         => $self->database_name,
+        user             => $self->database_user,
         %qp
     );
     return $stream;
 }
+
+sub database_name {
+    my $uri = shift->uri;
+    return $uri->dbname // $uri->user // 'postgres'
+}
+
+sub database_user {
+    my $uri = shift->uri;
+    return $uri->user // 'postgres'
+}
+
+=head2 negotiate_ssl
+
+Apply SSL negotiation.
+
+=cut
 
 async sub negotiate_ssl {
     my ($self, %args) = @_;
@@ -159,6 +217,14 @@ async sub negotiate_ssl {
     return $stream;
 }
 
+=head2 uri_for_dsn
+
+Returns a L<URI> corresponding to the given L<database source name|https://en.wikipedia.org/wiki/Data_source_name>.
+
+May throw an exception if we don't have a valid string.
+
+=cut
+
 sub uri_for_dsn {
     my ($class, $dsn) = @_;
     die 'invalid DSN, expecting DBI:Pg:...' unless $dsn =~ s/^DBI:Pg://i;
@@ -168,7 +234,31 @@ sub uri_for_dsn {
     $uri
 }
 
+=head2 stream
+
+The L<IO::Async::Stream> representing the database connection.
+
+=cut
+
 sub stream { shift->{stream} }
+
+=head2 on_read
+
+Process incoming database packets.
+
+Expects the following parameters:
+
+=over 4
+
+=item * C<$stream> - the L<IO::Async::Stream> we are receiving data on
+
+=item * C<$buffref> - a scalar reference to the current input data buffer
+
+=item * C<$eof> - true if we have reached the end of input
+
+=back
+
+=cut
 
 sub on_read {
 	my ($self, $stream, $buffref, $eof) = @_;
@@ -181,6 +271,12 @@ sub on_read {
     return 0;
 }
 
+=head2 ryu
+
+Provides a L<Ryu::Async> instance.
+
+=cut
+
 sub ryu {
     my ($self) = @_;
     $self->{ryu} //= do {
@@ -191,15 +287,33 @@ sub ryu {
     }
 }
 
+=head2 outgoing
+
+L<Ryu::Source> representing outgoing packets for the current database connection.
+
+=cut
+
 sub outgoing {
     my ($self) = @_;
     $self->{outgoing} //= $self->ryu->source;
 }
 
+=head2 incoming
+
+L<Ryu::Source> representing incoming packets for the current database connection.
+
+=cut
+
 sub incoming {
     my ($self) = @_;
     $self->{incoming} //= $self->ryu->source;
 }
+
+=head2 authenticated
+
+Resolves once database authentication is complete.
+
+=cut
 
 sub authenticated {
     my ($self) = @_;
@@ -264,7 +378,7 @@ sub protocol {
     my ($self) = @_;
     $self->{protocol} //= do {
         my $pg = Protocol::Database::PostgreSQL::Client->new(
-            database => $self->uri->dbname,
+            database => ($self->uri->dbname // 'postgres'),
             outgoing => $self->outgoing,
         );
         $self->incoming
@@ -297,19 +411,22 @@ sub protocol {
                 data_row => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
                     $log->tracef('Have row data %s', $msg);
-                    $self->active_query->row($msg->fields);
+                    $self->active_query->row([ $msg->fields ]);
                 }),
                 command_complete => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
-                    my $query = delete $self->{active_query};
+                    my $query = delete $self->{active_query} or do {
+                        $log->warnf('Command complete but no query');
+                        return;
+                    };
                     $log->tracef('Completed query %s with result %s', $query, $msg->result);
                     $query->done
                 }),
                 no_data => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
-                    my $query = delete $self->{active_query};
-                    $log->tracef('Completed query %s with no data', $query);
-                    $query->done if $query;
+                    $log->tracef('Completed query %s with no data', $self->active_query);
+                    # my $query = delete $self->{active_query};
+                    # $query->done if $query;
                 }),
                 send_request => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
@@ -349,10 +466,76 @@ sub protocol {
                     my $f = $query->completed;
                     $f->fail($msg->error) unless $f->is_ready;
                 }),
+                copy_in_response => $self->$curry::weak(sub {
+                    my ($self, $msg) = @_;
+                    my $query = $self->active_query;
+                    $log->tracef('Ready to copy data for %s', $query);
+                    my $proto = $self->protocol;
+                    {
+                        my $src = $query->streaming_input;
+                        $src->completed
+                            ->on_ready(sub {
+                                my ($f) = @_;
+                                $log->tracef('Sending copy done notification, stream status was %s', $f->state);
+                                $proto->send_message(
+                                    'CopyDone',
+                                    data => '',
+                                );
+                                $proto->send_message(
+                                    'Close',
+                                    portal    => '',
+                                    statement => '',
+                                );
+                                $proto->send_message(
+                                    'Sync',
+                                    portal    => '',
+                                    statement => '',
+                                );
+                            });
+                            $src->each(sub {
+                                $log->tracef('Sending %s', $_);
+                                $proto->send_copy_data($_);
+                            });
+                    }
+                    $query->ready_to_stream->done unless $query->ready_to_stream->is_ready;
+                }),
+                copy_out_response => $self->$curry::weak(sub {
+                    my ($self, $msg) = @_;
+                    $log->tracef('copy out starts %s', $msg);
+                    # $self->active_query->row([ $msg->fields ]);
+                }),
+                copy_data => $self->$curry::weak(sub {
+                    my ($self, $msg) = @_;
+                    $log->tracef('Have copy data %s', $msg);
+                    my $query = $self->active_query or do {
+                        $log->warnf('No active query for copy data');
+                        return;
+                    };
+                    $query->row($_) for $msg->rows;
+                }),
+                copy_done => $self->$curry::weak(sub {
+                    my ($self, $msg) = @_;
+                    $log->tracef('Copy done - %s', $msg);
+#                    my $query = delete $self->{active_query} or do {
+#                        $log->warnf('Copy done but no query');
+#                        return;
+#                    };
+#                    $log->tracef('Copy done for query %s', $query);
+#                    $query->done
+                }),
                 sub { $log->errorf('Unknown message %s (type %s)', $_, $_->type) }
             );
         $pg
     }
+}
+
+sub stream_from {
+    my ($self, $src) = @_;
+    my $proto = $self->proto;
+    $src->each(sub {
+        $log->tracef('Sending %s', $_);
+        $proto->send_copy_data($_);
+    })
 }
 
 =head2 set_parameter
@@ -406,25 +589,21 @@ sub simple_query {
     return $src;
 }
 
-sub query {
-    my ($self, $sql, @bind) = @_;
+sub handle_query {
+    my ($self, $query) = @_;
     die 'already have active query' if $self->{active_query};
-    $self->{active_query} = my $query = Database::Async::Query->new(
-        sql      => $sql,
-        bind     => \@bind,
-        row_data => my $src = $self->ryu->source
-    );
+    $self->{active_query} = $query;
     my $proto = $self->protocol;
     $proto->send_message(
         'Parse',
-        sql => $sql,
+        sql       => $query->sql,
         statement => '',
     );
     $proto->send_message(
         'Bind',
         portal    => '',
         statement => '',
-        param     => \@bind,
+        param     => [ $query->bind ],
     );
     $proto->send_message(
         'Describe',
@@ -436,31 +615,50 @@ sub query {
         portal    => '',
         statement => '',
     );
-    $proto->send_message(
-        'Close',
-        portal    => '',
-        statement => '',
-    );
-    $proto->send_message(
-        'Sync',
-        portal    => '',
-        statement => '',
+    if($query->{in}) {
+        $query->in
+            ->completed
+            ->on_done(sub {
+                $proto->send_message(
+                    'Close',
+                    portal    => '',
+                    statement => '',
+                );
+            })
+            ->on_ready(sub {
+                $proto->send_message(
+                    'Sync',
+                    portal    => '',
+                    statement => '',
+                );
+            });
+    } else {
+        $proto->send_message(
+            'Close',
+            portal    => '',
+            statement => '',
+        );
+        $proto->send_message(
+            'Sync',
+            portal    => '',
+            statement => '',
+        );
+    }
+    Future->done
+}
+
+sub query {
+    my ($self, $sql, @bind) = @_;
+    die 'use handle_query instead';
+    die 'already have active query' if $self->{active_query};
+    $self->{active_query} = my $query = Database::Async::Query->new(
+        sql      => $sql,
+        bind     => \@bind,
+        row_data => my $src = $self->ryu->source
     );
     return $src;
 }
 
-=head2 next_query
-
-
-=cut
-
-sub handle_query {
-    my ($self, $query) = @_;
-    die 'already have active query' if $self->{active_query};
-    $self->{active_query} = $query;
-    $self->protocol->simple_query($query->sql);
-    Future->done
-}
 
 sub active_query { shift->{active_query} }
 
