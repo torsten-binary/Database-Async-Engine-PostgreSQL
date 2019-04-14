@@ -100,7 +100,7 @@ async sub connect {
     # socket and other types.
     my $uri = $self->uri;
     die 'bad URI' unless ref $uri;
-    my $endpoint = join ':', $uri->host, $uri->port; 
+    my $endpoint = join ':', $uri->host, $uri->port;
     $log->tracef('Will connect to %s', $endpoint);
     $self->{ssl} = do {
         my $mode = $uri->query_param('sslmode') // 'prefer';
@@ -108,9 +108,9 @@ async sub connect {
     };
 
     my $sock = await $loop->connect(
-        service		=> $uri->port,
-        host		=> $uri->host,
-        socktype	=> 'stream',
+        service     => $uri->port,
+        host        => $uri->host,
+        socktype    => 'stream',
     );
 
     my $local  = join ':', $sock->sockhost_service(1);
@@ -261,7 +261,7 @@ Expects the following parameters:
 =cut
 
 sub on_read {
-	my ($self, $stream, $buffref, $eof) = @_;
+    my ($self, $stream, $buffref, $eof) = @_;
 
     $log->tracef('Have server message of length %d', length $$buffref);
     while(my $msg = $self->protocol->extract_message($buffref)) {
