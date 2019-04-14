@@ -4,12 +4,12 @@ requires 'curry', '>= 1.001';
 requires 'Future', '>= 0.38';
 requires 'Log::Any', '>= 1.050';
 requires 'Ryu::Async', '>= 0.014';
-requires 'Database::Async', 0;
+requires 'Database::Async', '>= 0.002';
 requires 'URI::postgres', 0;
 requires 'URI::QueryParam', 0;
-requires 'Future::AsyncAwait', '>= 0.21';
+requires 'Future::AsyncAwait', '>= 0.22';
 
-requires 'Protocol::PostgreSQL', '>= 0.001';
+requires 'Protocol::Database::PostgreSQL', '>= 1.001';
 
 on 'test' => sub {
 	requires 'Test::More', '>= 0.98';
