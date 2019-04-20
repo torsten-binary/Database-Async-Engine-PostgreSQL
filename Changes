@@ -1,6 +1,8 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+
+0.002     2019-04-20 15:18:59+08:00 Asia/Kuala_Lumpur
     New features:
 
     - ->write_len equivalent for ->read_len, defaults to 2MB (previously 8KB which was
