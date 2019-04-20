@@ -84,6 +84,17 @@ Defaults to 2 megabytes.
 
 sub read_len { shift->{read_len} //= 2 * 1024 * 1024 }
 
+=head2 write_len
+
+Buffer write length. Higher values mean we will attempt to write more
+data for each I/O loop iteration.
+
+Defaults to 2 megabytes.
+
+=cut
+
+sub write_len { shift->{write_len} //= 2 * 1024 * 1024 }
+
 =head2 connect
 
 Establish a connection to the server.
@@ -125,6 +136,7 @@ async sub connect {
         my $stream = IO::Async::Stream->new(
             handle   => $sock,
             read_len => $self->read_len,
+            write_len => $self->write_len,
             on_read  => sub { 0 }
         )
     );
