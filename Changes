@@ -1,6 +1,11 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - ->write_len equivalent for ->read_len, defaults to 2MB (previously 8KB which was
+    not so efficient when dealing with larger queries or bulk transfer such as COPY IN)
+    - ->application_name support (for cases where it's not so easy to add that to the URI)
 
 0.001     2019-04-15 06:29:39+08:00 Asia/Kuala_Lumpur
     Initial CPAN release
