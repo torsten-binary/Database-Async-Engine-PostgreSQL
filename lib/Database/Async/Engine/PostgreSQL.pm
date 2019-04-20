@@ -158,7 +158,7 @@ async sub connect {
     $log->tracef('Send initial request with user %s', $uri->user);
     my %qp = $uri->query_params;
     delete $qp{sslmode};
-    $qp{application_name} //= 'Database::Async';
+    $qp{application_name} //= $self->application_name;
     $self->protocol->send_startup_request(
         database         => $self->database_name,
         user             => $self->database_user,
@@ -230,6 +230,9 @@ async sub negotiate_ssl {
     }
     return $stream;
 }
+
+sub is_replication { shift->{is_replication} //= 0 }
+sub application_name { shift->{application_name} //= 'perl' }
 
 =head2 uri_for_dsn
 
