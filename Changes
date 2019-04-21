@@ -1,6 +1,9 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - imported temporary schema generation templates in ::DDL
 
 0.002     2019-04-20 15:18:59+08:00 Asia/Kuala_Lumpur
     New features:
