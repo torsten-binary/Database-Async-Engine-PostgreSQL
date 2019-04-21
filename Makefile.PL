@@ -31,7 +31,7 @@ my %WriteMakefileArgs = (
     "Ryu::Async" => "0.014",
     "Ryu::Observable" => 0,
     "Scalar::Util" => 0,
-    "Template" => 0,
+    "Template" => "2.28",
     "URI::QueryParam" => 0,
     "URI::postgres" => 0,
     "curry" => "1.001",
@@ -57,7 +57,7 @@ my %WriteMakefileArgs = (
     "Test::Refcount" => "0.07",
     "feature" => 0
   },
-  "VERSION" => "0.002",
+  "VERSION" => "0.003",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -85,7 +85,7 @@ my %FallbackPrereqs = (
   "Ryu::Async" => "0.014",
   "Ryu::Observable" => 0,
   "Scalar::Util" => 0,
-  "Template" => 0,
+  "Template" => "2.28",
   "Test::CheckDeps" => "0.010",
   "Test::Deep" => 0,
   "Test::Fatal" => "0.010",

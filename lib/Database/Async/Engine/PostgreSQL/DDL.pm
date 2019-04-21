@@ -226,7 +226,7 @@ TEMPLATE
     } if defined $schema->description;
     @pending;
 }
-        
+
 =head1 METHODS - Internal
 
 =cut
