@@ -191,7 +191,8 @@ Returns a list of SQL commands to run.
 =cut
 
 sub create_schema {
-    my ($schema) = @_;
+    my ($self, $schema) = @_;
+    my $tt = $self->tt;
     my $data = {
         schema => {
             name => $schema->name,
