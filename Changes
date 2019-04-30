@@ -1,6 +1,10 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - very basic type and table info retrieval, intended as a starting point
+    to replace the common information_schema handling used in other databases.
 
 0.003     2019-04-21 14:20:29+08:00 Asia/Kuala_Lumpur
     New features:
