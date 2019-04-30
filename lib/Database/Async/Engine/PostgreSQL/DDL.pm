@@ -49,7 +49,7 @@ select  a.attname as "name",
             and d.adnum = a.attnum
             and a.atthasdef
         ) as "default"
-from pg_class c 
+from pg_class c
 inner join pg_namespace n on n.oid = c.relnamespace
 inner join pg_attribute a on a.attrelid = c.oid
 inner join pg_type t on a.atttypid = t.oid
