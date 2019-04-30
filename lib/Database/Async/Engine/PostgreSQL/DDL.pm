@@ -24,6 +24,11 @@ use Template;
 
 use Log::Any qw($log);
 
+sub new {
+    my ($class, %args) = @_;
+    bless \%args, $class;
+}
+
 =head1 METHODS
 
 =cut
@@ -139,7 +144,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Type %s definition would be: %s', $type->name, $out);
+        $log->tracef('Type %s definition would be: %s', $type->name, $out);
         $out
     };
     push @pending, do {
@@ -155,7 +160,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Type %s description would be: %s', $type->name, $out);
+        $log->tracef('Type %s description would be: %s', $type->name, $out);
         $out
     } if defined $type->description;
     @pending
@@ -214,7 +219,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Table %s definition would be: %s', $tbl->name, $out);
+        $log->tracef('Table %s definition would be: %s', $tbl->name, $out);
         $out
     };
     push @pending, do {
@@ -225,7 +230,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Table %s description would be: %s', $tbl->name, $out);
+        $log->tracef('Table %s description would be: %s', $tbl->name, $out);
         $out
     } if defined $tbl->description;
     @pending;
@@ -259,7 +264,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Schema %s definition would be: %s', $schema->name, $out);
+        $log->tracef('Schema %s definition would be: %s', $schema->name, $out);
         $out
     };
     push @pending, do {
@@ -270,7 +275,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Schema %s description would be: %s', $schema->name, $out);
+        $log->tracef('Schema %s description would be: %s', $schema->name, $out);
         $out
     } if defined $schema->description;
     @pending;
