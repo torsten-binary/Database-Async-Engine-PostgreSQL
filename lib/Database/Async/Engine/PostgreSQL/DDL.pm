@@ -191,7 +191,7 @@ sub create_table {
                         schema => $_->references->schema->name,
                     },
                     fields     => [ map { $_->name } $_->fields ],
-                }, $tbl->constraints
+                }, $tbl->foreign_keys
             ],
             parents => [
                 map {;
