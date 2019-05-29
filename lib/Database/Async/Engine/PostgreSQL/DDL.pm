@@ -182,6 +182,17 @@ sub create_table {
             defined_in => $tbl->defined_in,
             schema => $tbl->schema->name,
             (map {; $_ => $tbl->$_ } grep { defined $tbl->$_ } qw(name tablespace)),
+            primary_keys => [ map { $_->name } $tbl->primary_keys ],
+            constraints => [
+                map +{
+                    type       => $_->type,
+                    references => {
+                        name   => $_->references->name,
+                        schema => $_->references->schema->name,
+                    },
+                    fields     => [ map { $_->name } $_->fields ],
+                }, $tbl->constraints
+            ],
             parents => [
                 map {;
                     +{
@@ -218,7 +229,10 @@ sub create_table {
 [% END -%]
 create [% IF table.temporary %]temporary [% END %][% IF table.unlogged %]unlogged [% END %]table if not exists "[% table.schema %]"."[% table.name %]" (
 [% FOREACH field IN table.fields -%]
-    "[% field.name %]" [% IF field.type.schema.defined %]"[% field.type.schema %]".[% END %][% IF field.type.is_builtin; field.type.name; ELSE %]"[% field.type.name %]"[% END %][% IF !field.nullable %] not null[% END %][% UNLESS loop.last %],[% END %]
+    "[% field.name %]" [% IF field.type.schema.defined %]"[% field.type.schema %]".[% END %][% IF field.type.is_builtin; field.type.name; ELSE %]"[% field.type.name %]"[% END %][% IF !field.nullable %] not null[% END %][% IF table.primary_keys.size > 0 || !loop.last %],[% END %]
+[% END -%]
+[% IF table.primary_keys.size -%]
+    primary key ([% table.primary_keys.join(',') %])
 [% END -%]
 )[% IF table.parents.size %] inherits (
 [% FOREACH parent IN table.parents -%]
@@ -243,6 +257,21 @@ TEMPLATE
         $log->tracef('Table %s description would be: %s', $tbl->name, $out);
         $out
     } if defined $tbl->description;
+
+    for my $constraint ($data->{table}{constraints}->@*) {
+        die 'unsupported constraint ' . $constraint->{type} unless $constraint->{type} eq 'foreign_key';
+        push @pending, do {
+            $tt->process(
+                \<<'TEMPLATE',
+alter table "[% table.schema %]"."[% table.name %]" add foreign key ([% constraint.fields.join(',') %]) references "[% constraint.references.schema %]"."[% constraint.references.name %]"
+TEMPLATE
+                { %$data, constraint => $constraint },
+                \my $out
+            ) or die $tt->error;
+            $log->infof('Table %s FK on (%s) to %s', $tbl->name, join(',', $constraint->{fields}->@*), $constraint->{references});
+            $out
+        };
+    }
     @pending;
 }
 
