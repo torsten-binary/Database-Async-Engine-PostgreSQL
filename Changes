@@ -1,6 +1,9 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    New features:
+
+    - some updates to handle primary keys on tables in ::DDL
 
 0.005     2019-05-05 19:21:51+08:00 Asia/Kuala_Lumpur
     No new features.
