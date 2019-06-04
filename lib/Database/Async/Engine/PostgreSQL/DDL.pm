@@ -259,7 +259,10 @@ TEMPLATE
     } if defined $tbl->description;
 
     for my $constraint ($data->{table}{constraints}->@*) {
-        die 'unsupported constraint ' . $constraint->{type} unless $constraint->{type} eq 'foreign_key';
+        unless($constraint->{type} eq 'foreign_key') {
+            $log->warnf('unsupported constraint %s on table %s', $constraint->{type}, $data->{table}{name});
+            next;
+        }
         push @pending, do {
             $tt->process(
                 \<<'TEMPLATE',
@@ -268,7 +271,7 @@ TEMPLATE
                 { %$data, constraint => $constraint },
                 \my $out
             ) or die $tt->error;
-            $log->infof('Table %s FK on (%s) to %s', $tbl->name, join(',', $constraint->{fields}->@*), $constraint->{references});
+            $log->tracef('Table %s FK on (%s) to %s', $tbl->name, join(',', $constraint->{fields}->@*), $constraint->{references});
             $out
         };
     }
