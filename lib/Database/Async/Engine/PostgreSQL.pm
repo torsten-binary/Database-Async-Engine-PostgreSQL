@@ -210,10 +210,8 @@ async sub negotiate_ssl {
     if($resp eq 'S') {
         # S for SSL...
         $log->tracef('This is SSL, let us upgrade');
-        my $sock = $stream->write_handle;
-        $stream->configure(handle => undef);
-        my $ssl_sock = await $self->loop->SSL_upgrade(
-            handle          => $sock,
+        $stream = await $self->loop->SSL_upgrade(
+            handle          => $stream,
             # SSL defaults...
             SSL_server      => 0,
             SSL_hostname    => $self->uri->host,
@@ -222,7 +220,6 @@ async sub negotiate_ssl {
             # better than we do
             (map {; $_ => $self->{$_} } grep { /^SSL_/ } keys %$self)
         );
-        $stream->configure(handle => $ssl_sock);
         $log->tracef('Upgrade complete');
     } elsif($resp eq 'N') {
         # N for "no SSL"...
