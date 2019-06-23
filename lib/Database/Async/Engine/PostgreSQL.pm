@@ -135,8 +135,6 @@ async sub connect {
     $self->add_child(
         my $stream = IO::Async::Stream->new(
             handle   => $sock,
-            read_len => $self->read_len,
-            write_len => $self->write_len,
             on_read  => sub { 0 }
         )
     );
@@ -151,9 +149,15 @@ async sub connect {
     $self->outgoing->each(sub {
         $log->tracef('Write bytes [%v02x]', $_);
         $self->ready_for_query->set_string('');
-        $self->stream->write($_);
+        $self->stream->write("$_");
+        return;
     });
-    $stream->configure(on_read => $self->curry::weak::on_read);
+    $stream->configure(
+        on_read   => $self->curry::weak::on_read,
+        read_len  => $self->read_len,
+        write_len => $self->write_len,
+        autoflush => 0,
+    );
 
     $log->tracef('Send initial request with user %s', $uri->user);
     my %qp = $uri->query_params;
