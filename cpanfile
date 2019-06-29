@@ -7,10 +7,10 @@ requires 'Ryu::Async', '>= 0.014';
 requires 'Database::Async', '>= 0.008';
 requires 'URI::postgres', 0;
 requires 'URI::QueryParam', 0;
-requires 'Future::AsyncAwait', '>= 0.27';
+requires 'Future::AsyncAwait', '>= 0.28';
 requires 'Template', '>= 2.28';
 
-requires 'Protocol::Database::PostgreSQL', '>= 1.004';
+requires 'Protocol::Database::PostgreSQL', '>= 1.005';
 
 on 'test' => sub {
 	requires 'Test::More', '>= 0.98';
