@@ -4,7 +4,7 @@ package Database::Async::Engine::PostgreSQL;
 use strict;
 use warnings;
 
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 
 use parent qw(Database::Async::Engine);
 
