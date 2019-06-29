@@ -177,6 +177,7 @@ Returns a list of SQL commands to run.
 sub create_table {
     my ($self, $tbl) = @_;
     my $tt = $self->tt;
+    $log->tracef('Creating table %s', $tbl->name);
     my $data = {
         table => {
             defined_in => $tbl->defined_in,
