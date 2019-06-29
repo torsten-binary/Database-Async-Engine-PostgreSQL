@@ -1,5 +1,31 @@
 Revision history for Database-Async-Engine-PostgreSQL
 
+0.007     2019-06-30 01:52:53+08:00 Asia/Kuala_Lumpur
+    No new features.
+
+    Bugs fixed:
+
+    - improved query performance, particularly in COPY operations,
+    by allowing multiple smaller writes to be combined
+
+0.006     2019-06-04 23:47:47+08:00 Asia/Kuala_Lumpur
+    New features:
+
+    - some updates to handle primary keys on tables in ::DDL
+
+0.005     2019-05-05 19:21:51+08:00 Asia/Kuala_Lumpur
+    No new features.
+
+    Bugs fixed:
+
+    - improvement schema handling in DDL generation methods to be more consistent
+
+0.004     2019-05-01 06:46:59+08:00 Asia/Kuala_Lumpur
+    New features:
+
+    - very basic type and table info retrieval, intended as a starting point
+    to replace the common information_schema handling used in other databases.
+
 0.003     2019-04-21 14:20:29+08:00 Asia/Kuala_Lumpur
     New features:
 

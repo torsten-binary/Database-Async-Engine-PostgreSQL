@@ -3,7 +3,7 @@ package Database::Async::Engine::PostgreSQL::DDL;
 use strict;
 use warnings;
 
-our $VERSION = '0.003'; # VERSION
+our $VERSION = '0.007'; # VERSION
 
 =head1 NAME
 
@@ -24,7 +24,61 @@ use Template;
 
 use Log::Any qw($log);
 
+sub new {
+    my ($class, %args) = @_;
+    bless \%args, $class;
+}
+
 =head1 METHODS
+
+=cut
+
+sub table_info {
+    my ($self, $tbl) = @_;
+    return (<<'EOS', 'schema', 'table');
+select  a.attname as "name",
+        t.typname as "type",
+        not(a.attnotnull) as "nullable",
+        (
+            select substring(
+                pg_catalog.pg_get_expr(d.adbin, d.adrelid),
+                E'\'(.*)\''
+            )
+            from pg_catalog.pg_attrdef d
+            where d.adrelid = a.attrelid
+            and d.adnum = a.attnum
+            and a.atthasdef
+        ) as "default"
+from pg_class c
+inner join pg_namespace n on n.oid = c.relnamespace
+inner join pg_attribute a on a.attrelid = c.oid
+inner join pg_type t on a.atttypid = t.oid
+where n.nspname = $1
+and c.relname = $2
+and a.attnum > 0
+order by a.attnum
+EOS
+}
+
+sub schema_info {
+    my ($self, $tbl) = @_;
+    return (<<'EOS', 'schema');
+select  n.nspname as "name"
+from pg_namespace n
+where n.nspname = $1
+EOS
+}
+
+sub type_info {
+    my ($self, $tbl) = @_;
+    return (<<'EOS', 'schema', 'type');
+select *
+from pg_catalog.pg_type t
+inner join pg_namespace n on n.oid = t.typnamespace
+where n.nspname = $1
+and t.typname = $2
+EOS
+}
 
 =head2 create_type
 
@@ -90,7 +144,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Type %s definition would be: %s', $type->name, $out);
+        $log->tracef('Type %s definition would be: %s', $type->name, $out);
         $out
     };
     push @pending, do {
@@ -106,7 +160,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Type %s description would be: %s', $type->name, $out);
+        $log->tracef('Type %s description would be: %s', $type->name, $out);
         $out
     } if defined $type->description;
     @pending
@@ -123,26 +177,48 @@ Returns a list of SQL commands to run.
 sub create_table {
     my ($self, $tbl) = @_;
     my $tt = $self->tt;
+    $log->tracef('Creating table %s', $tbl->name);
     my $data = {
         table => {
             defined_in => $tbl->defined_in,
             schema => $tbl->schema->name,
             (map {; $_ => $tbl->$_ } grep { defined $tbl->$_ } qw(name tablespace)),
+            primary_keys => [ map { $_->name } $tbl->primary_keys ],
+            constraints => [
+                map +{
+                    type       => $_->type,
+                    references => {
+                        name   => $_->references->name,
+                        schema => $_->references->schema->name,
+                    },
+                    fields     => [ map { $_->name } $_->fields ],
+                }, $tbl->foreign_keys
+            ],
             parents => [
-                $tbl->parents
+                map {;
+                    +{
+                        name => $_->name,
+                        schema => $_->schema->name
+                    }
+                } $tbl->parents
             ],
             fields => [
                 (map {;
-                        +{
-                            name => $_->name,
-                            type => {
-                                schema => $_->type->schema,
-                                name => $_->type->name,
-                                is_builtin => $_->type->is_builtin,
-                            },
-                            nullable => $_->nullable,
-                        }
-                    } $tbl->fields)
+                    +{
+                        name => $_->name,
+                        type => {
+                            schema => ($_->type->is_builtin
+                                ? undef
+                                : $_->type->schema
+                                ? $_->type->schema->name
+                                : $tbl->schema->name
+                            ),
+                            name => $_->type->name,
+                            is_builtin => $_->type->is_builtin,
+                        },
+                        nullable => $_->nullable,
+                    }
+                } $tbl->fields)
             ]
         }
     };
@@ -154,7 +230,10 @@ sub create_table {
 [% END -%]
 create [% IF table.temporary %]temporary [% END %][% IF table.unlogged %]unlogged [% END %]table if not exists "[% table.schema %]"."[% table.name %]" (
 [% FOREACH field IN table.fields -%]
-    "[% field.name %]" [% IF field.type.schema %]"[% field.type.schema.name %]".[% END %][% IF field.type.is_builtin; field.type.name; ELSE %]"[% field.type.name %]"[% END %][% IF !field.nullable %] not null[% END %][% UNLESS loop.last %],[% END %]
+    "[% field.name %]" [% IF field.type.schema.defined %]"[% field.type.schema %]".[% END %][% IF field.type.is_builtin; field.type.name; ELSE %]"[% field.type.name %]"[% END %][% IF !field.nullable %] not null[% END %][% IF table.primary_keys.size > 0 || !loop.last %],[% END %]
+[% END -%]
+[% IF table.primary_keys.size -%]
+    primary key ([% table.primary_keys.join(',') %])
 [% END -%]
 )[% IF table.parents.size %] inherits (
 [% FOREACH parent IN table.parents -%]
@@ -165,7 +244,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Table %s definition would be: %s', $tbl->name, $out);
+        $log->tracef('Table %s definition would be: %s', $tbl->name, $out);
         $out
     };
     push @pending, do {
@@ -176,9 +255,27 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Table %s description would be: %s', $tbl->name, $out);
+        $log->tracef('Table %s description would be: %s', $tbl->name, $out);
         $out
     } if defined $tbl->description;
+
+    for my $constraint ($data->{table}{constraints}->@*) {
+        unless($constraint->{type} eq 'foreign_key') {
+            $log->warnf('unsupported constraint %s on table %s', $constraint->{type}, $data->{table}{name});
+            next;
+        }
+        push @pending, do {
+            $tt->process(
+                \<<'TEMPLATE',
+alter table "[% table.schema %]"."[% table.name %]" add foreign key ([% constraint.fields.join(',') %]) references "[% constraint.references.schema %]"."[% constraint.references.name %]"
+TEMPLATE
+                { %$data, constraint => $constraint },
+                \my $out
+            ) or die $tt->error;
+            $log->tracef('Table %s FK on (%s) to %s', $tbl->name, join(',', $constraint->{fields}->@*), $constraint->{references});
+            $out
+        };
+    }
     @pending;
 }
 
@@ -210,7 +307,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Schema %s definition would be: %s', $schema->name, $out);
+        $log->tracef('Schema %s definition would be: %s', $schema->name, $out);
         $out
     };
     push @pending, do {
@@ -221,7 +318,7 @@ TEMPLATE
             $data,
             \my $out
         ) or die $tt->error;
-        $log->infof('Schema %s description would be: %s', $schema->name, $out);
+        $log->tracef('Schema %s description would be: %s', $schema->name, $out);
         $out
     } if defined $schema->description;
     @pending;
