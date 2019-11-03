@@ -438,7 +438,7 @@ sub protocol {
                         return;
                     };
                     $log->tracef('Completed query %s with result %s', $query, $msg->result);
-                    $query->done
+                    $query->done unless $query->completed->is_ready;
                 }),
                 no_data => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
