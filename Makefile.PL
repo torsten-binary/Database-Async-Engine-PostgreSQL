@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.006;
+
 
 use ExtUtils::MakeMaker;
 
@@ -14,53 +14,35 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "Database-Async-Engine-PostgreSQL",
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.006",
   "NAME" => "Database::Async::Engine::PostgreSQL",
   "PREREQ_PM" => {
     "Config::Tiny" => 0,
     "Database::Async" => "0.008",
-    "Database::Async::Engine" => 0,
-    "Database::Async::Query" => 0,
     "File::HomeDir" => 0,
     "Future" => "0.40",
     "Future::AsyncAwait" => "0.28",
-    "IO::Async::SSL" => 0,
-    "IO::Socket::SSL" => 0,
     "Log::Any" => "1.050",
     "Path::Tiny" => 0,
     "Protocol::Database::PostgreSQL" => "1.005",
-    "Protocol::Database::PostgreSQL::Client" => 0,
-    "Protocol::Database::PostgreSQL::Constants" => 0,
     "Ryu::Async" => "0.014",
-    "Ryu::Observable" => 0,
-    "Scalar::Util" => 0,
     "Template" => "2.28",
     "URI::QueryParam" => 0,
     "URI::postgres" => 0,
     "curry" => "1.001",
     "indirect" => 0,
-    "overload" => 0,
-    "parent" => 0,
-    "strict" => 0,
-    "warnings" => 0
+    "parent" => 0
   },
   "TEST_REQUIRES" => {
-    "Database::Async" => "0.008",
     "ExtUtils::MakeMaker" => 0,
     "File::Spec" => 0,
     "File::Temp" => 0,
-    "IO::Async::Loop" => 0,
     "IO::Handle" => 0,
     "IPC::Open3" => 0,
-    "Log::Any::Adapter" => 0,
     "Test::CheckDeps" => "0.010",
-    "Test::Deep" => 0,
     "Test::Fatal" => "0.010",
     "Test::MockModule" => 0,
     "Test::More" => "0.98",
-    "Test::PostgreSQL" => 0,
-    "Test::Refcount" => "0.07",
-    "feature" => 0
+    "Test::Refcount" => "0.07"
   },
   "VERSION" => "0.008",
   "test" => {
@@ -72,45 +54,29 @@ my %WriteMakefileArgs = (
 my %FallbackPrereqs = (
   "Config::Tiny" => 0,
   "Database::Async" => "0.008",
-  "Database::Async::Engine" => 0,
-  "Database::Async::Query" => 0,
   "ExtUtils::MakeMaker" => 0,
   "File::HomeDir" => 0,
   "File::Spec" => 0,
   "File::Temp" => 0,
   "Future" => "0.40",
   "Future::AsyncAwait" => "0.28",
-  "IO::Async::Loop" => 0,
-  "IO::Async::SSL" => 0,
   "IO::Handle" => 0,
-  "IO::Socket::SSL" => 0,
   "IPC::Open3" => 0,
   "Log::Any" => "1.050",
-  "Log::Any::Adapter" => 0,
   "Path::Tiny" => 0,
   "Protocol::Database::PostgreSQL" => "1.005",
-  "Protocol::Database::PostgreSQL::Client" => 0,
-  "Protocol::Database::PostgreSQL::Constants" => 0,
   "Ryu::Async" => "0.014",
-  "Ryu::Observable" => 0,
-  "Scalar::Util" => 0,
   "Template" => "2.28",
   "Test::CheckDeps" => "0.010",
-  "Test::Deep" => 0,
   "Test::Fatal" => "0.010",
   "Test::MockModule" => 0,
   "Test::More" => "0.98",
-  "Test::PostgreSQL" => 0,
   "Test::Refcount" => "0.07",
   "URI::QueryParam" => 0,
   "URI::postgres" => 0,
   "curry" => "1.001",
-  "feature" => 0,
   "indirect" => 0,
-  "overload" => 0,
-  "parent" => 0,
-  "strict" => 0,
-  "warnings" => 0
+  "parent" => 0
 );
 
 
