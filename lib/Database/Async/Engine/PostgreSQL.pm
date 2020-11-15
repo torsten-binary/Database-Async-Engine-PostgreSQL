@@ -14,7 +14,34 @@ Database::Async::Engine::PostgreSQL - support for PostgreSQL databases in L<Data
 
 =head1 DESCRIPTION
 
+Provide a C<postgresql://> URI when instantiating L<Database::Async> to use this engine.
+
+ $loop->add(
+  my $dbh = Database::Async->new(
+   uri => 'postgresql://localhost'
+  )
+ );
+
 Connection can also be made using a service definition, as described in L<https://www.postgresql.org/docs/current/libpq-pgservice.html>.
+
+ $loop->add(
+  my $dbh = Database::Async->new(
+   type => 'postgresql',
+   engine => {
+    service => 'example',
+   }
+  )
+ );
+
+If neither URI nor service are provided, the C<PGSERVICE> environment variable is attempted, and will fall back
+to localhost (similar to C<psql -h localhost> behaviour).
+
+ $loop->add(
+  my $dbh = Database::Async->new(
+   type => 'postgresql',
+  )
+ );
+
 
 =cut
 
