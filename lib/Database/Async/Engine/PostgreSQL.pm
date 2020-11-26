@@ -616,11 +616,19 @@ sub protocol {
                     my ($self, $msg) = @_;
                     $log->tracef('Copy done - %s', $msg);
                 }),
+                notification_response => $self->$curry::weak(sub {
+                    my ($self, $msg) = @_;
+                    my ($chan, $data) = @{$msg}{qw(channel data)};
+                    $log->tracef('Notification on channel %s containing %s', $chan, $data);
+                    $self->db->notification($self, $chan, $data);
+                }),
                 sub { $log->errorf('Unknown message %s (type %s)', $_, $_->type) }
             );
         $pg
     }
 }
+
+
 
 sub stream_from {
     my ($self, $src) = @_;
