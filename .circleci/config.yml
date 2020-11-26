@@ -3,6 +3,9 @@ jobs:
   build:
     docker:
     - image: tm604/perl-dzil
+      environment:
+        NET_ASYNC_REDIS_HOST: 127.0.0.1
+    - image: postgres:13
     steps:
     - checkout
     - restore_cache:
