@@ -628,8 +628,6 @@ sub protocol {
     }
 }
 
-
-
 sub stream_from {
     my ($self, $src) = @_;
     my $proto = $self->proto;
@@ -759,7 +757,6 @@ sub query {
     );
     return $src;
 }
-
 
 sub active_query { shift->{active_query} }
 
