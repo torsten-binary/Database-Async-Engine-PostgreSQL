@@ -477,7 +477,7 @@ sub protocol {
     my ($self) = @_;
     $self->{protocol} //= do {
         my $pg = Protocol::Database::PostgreSQL::Client->new(
-            database => ($self->uri->dbname // 'postgres'),
+            database => $self->database_name,
             outgoing => $self->outgoing,
         );
         $self->incoming
