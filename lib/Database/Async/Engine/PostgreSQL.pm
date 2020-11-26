@@ -142,10 +142,10 @@ async sub connect {
     # Initial connection is made directly through the URI
     # parameters. Eventually we also want to support UNIX
     # socket and other types.
-    my $uri = $self->service
-    ? $self->uri_for_service($self->service)
-    : $self->uri;
+    $self->{uri} ||= $self->uri_for_service($self->service) if $self->service;
+    my $uri = $self->uri;
     die 'bad URI' unless ref $uri;
+    $log->tracef('URI for connection is %s', "$uri");
     my $endpoint = join ':', $uri->host, $uri->port;
     $log->tracef('Will connect to %s', $endpoint);
     $self->{ssl} = do {
