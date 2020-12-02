@@ -1,10 +1,10 @@
 requires 'parent', 0;
 requires 'indirect', 0;
 requires 'curry', '>= 1.001';
-requires 'Future', '>= 0.40';
+requires 'Future', '>= 0.46';
 requires 'Log::Any', '>= 1.050';
-requires 'Ryu::Async', '>= 0.014';
-requires 'Database::Async', '>= 0.008';
+requires 'Ryu::Async', '>= 0.017';
+requires 'Database::Async', '>= 0.013';
 requires 'URI::postgres', 0;
 requires 'URI::QueryParam', 0;
 requires 'Future::AsyncAwait', '>= 0.28';
