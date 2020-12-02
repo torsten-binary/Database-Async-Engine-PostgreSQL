@@ -1,6 +1,8 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+
+0.009     2020-12-03 00:18:17+08:00 Asia/Kuala_Lumpur
     New features:
 
     - support PGSERVICE, PGSERVICEFILE and PGSYSCONFDIR for locating and using
