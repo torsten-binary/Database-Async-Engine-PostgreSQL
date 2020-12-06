@@ -73,6 +73,18 @@ Database::Async::Engine->register_class(
 
 =head1 METHODS
 
+=head2 configure
+
+=cut
+
+sub configure {
+    my ($self, %args) = @_;
+    for (qw(service)) {
+        $self->{$_} = delete $args{$_} if exists $args{$_};
+    }
+    return $self->next::method(%args);
+}
+
 =head2 connection
 
 Returns a L<Future> representing the database connection,
