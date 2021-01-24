@@ -25,4 +25,6 @@ on 'test' => sub {
 
 on 'develop' => sub {
 	requires 'Test::CPANfile', '>= 0.02';
+    requires 'Devel::Cover::Report::Coveralls', '>= 0.11';
+    requires 'Devel::Cover';
 };
