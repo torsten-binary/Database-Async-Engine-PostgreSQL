@@ -19,7 +19,7 @@ on 'test' => sub {
 	requires 'Test::More', '>= 0.98';
 	requires 'Test::Fatal', '>= 0.010';
 	requires 'Test::Refcount', '>= 0.07';
-    requires 'Test::MockModule';
+    requires 'Test::MockModule', '>= 0.171';
     requires 'File::Temp';
 };
 
