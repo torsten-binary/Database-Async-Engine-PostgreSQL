@@ -726,24 +726,7 @@ sub handle_query {
         portal    => '',
         statement => '',
     );
-    if($query->{in}) {
-        $query->in
-            ->completed
-            ->on_done(sub {
-                $proto->send_message(
-                    'Close',
-                    portal    => '',
-                    statement => '',
-                );
-            })
-            ->on_ready(sub {
-                $proto->send_message(
-                    'Sync',
-                    portal    => '',
-                    statement => '',
-                );
-            });
-    } else {
+    unless($query->{in}) {
         $proto->send_message(
             'Close',
             portal    => '',
