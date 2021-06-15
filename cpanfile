@@ -12,6 +12,8 @@ requires 'Template', '>= 2.28';
 requires 'File::HomeDir';
 requires 'Path::Tiny';
 requires 'Config::Tiny';
+requires 'Encode';
+requires 'Unicode::UTF8';
 
 requires 'Protocol::Database::PostgreSQL', '>= 1.005';
 
