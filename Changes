@@ -1,6 +1,13 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    [New features]
+
+    - encoding support, requires Database::Async 0.14+
+
+    [Bugs fixed]
+
+    - query completion fixes to align with latest Database::Async
 
 0.010     2020-12-07 02:54:29+08:00 Asia/Kuala_Lumpur
     No new features.

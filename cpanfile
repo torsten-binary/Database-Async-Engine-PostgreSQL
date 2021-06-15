@@ -4,7 +4,7 @@ requires 'curry', '>= 1.001';
 requires 'Future', '>= 0.46';
 requires 'Log::Any', '>= 1.050';
 requires 'Ryu::Async', '>= 0.017';
-requires 'Database::Async', '>= 0.013';
+requires 'Database::Async', '>= 0.014';
 requires 'URI::postgres', 0;
 requires 'URI::QueryParam', 0;
 requires 'Future::AsyncAwait', '>= 0.28';
