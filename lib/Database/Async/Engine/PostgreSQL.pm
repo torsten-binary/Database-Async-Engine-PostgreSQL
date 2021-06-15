@@ -761,17 +761,7 @@ sub handle_query {
     Future->done
 }
 
-sub query {
-    my ($self, $sql, @bind) = @_;
-    die 'use handle_query instead';
-    die 'already have active query' if $self->{active_query};
-    $self->{active_query} = my $query = Database::Async::Query->new(
-        sql      => $sql,
-        bind     => \@bind,
-        row_data => my $src = $self->ryu->source
-    );
-    return $src;
-}
+sub query { die 'use handle_query instead'; }
 
 sub active_query { shift->{active_query} }
 
