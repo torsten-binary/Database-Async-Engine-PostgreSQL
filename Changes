@@ -1,6 +1,8 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+
+0.011     2021-06-16 01:00:08+08:00 Asia/Kuala_Lumpur
     [New features]
 
     - encoding support, requires Database::Async 0.14+
