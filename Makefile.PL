@@ -42,7 +42,7 @@ my %WriteMakefileArgs = (
     "IPC::Open3" => 0,
     "Test::CheckDeps" => "0.010",
     "Test::Fatal" => "0.010",
-    "Test::MockModule" => 0,
+    "Test::MockModule" => "0.171",
     "Test::More" => "0.98",
     "Test::Refcount" => "0.07"
   },
@@ -72,7 +72,7 @@ my %FallbackPrereqs = (
   "Template" => "2.28",
   "Test::CheckDeps" => "0.010",
   "Test::Fatal" => "0.010",
-  "Test::MockModule" => 0,
+  "Test::MockModule" => "0.171",
   "Test::More" => "0.98",
   "Test::Refcount" => "0.07",
   "URI::QueryParam" => 0,
