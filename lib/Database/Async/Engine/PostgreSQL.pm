@@ -576,10 +576,13 @@ sub protocol {
                 }),
                 error_response => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
-                    my $query = $self->active_query;
-                    $log->warnf('Query returned error %s for %s', $msg->error, $self->active_query);
-                    my $f = $query->completed;
-                    $f->fail($msg->error) unless $f->is_ready;
+                    if(my $query = $self->active_query) {
+                        $log->warnf('Query returned error %s for %s', $msg->error, $self->active_query);
+                        my $f = $query->completed;
+                        $f->fail($msg->error) unless $f->is_ready;
+                    } else {
+                        $log->errorf('Received error %s with no active query', $msg->error);
+                    }
                 }),
                 copy_in_response => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
