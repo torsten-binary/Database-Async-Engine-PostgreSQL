@@ -18,15 +18,16 @@ requires 'Unicode::UTF8';
 requires 'Protocol::Database::PostgreSQL', '>= 1.005';
 
 on 'test' => sub {
-	requires 'Test::More', '>= 0.98';
-	requires 'Test::Fatal', '>= 0.010';
-	requires 'Test::Refcount', '>= 0.07';
+    requires 'Test::More', '>= 0.98';
+    requires 'Test::Fatal', '>= 0.010';
+    requires 'Test::Refcount', '>= 0.07';
     requires 'Test::MockModule', '>= 0.171';
+    requires 'Test::Warnings', '>= 0.026';
     requires 'File::Temp';
 };
 
 on 'develop' => sub {
-	requires 'Test::CPANfile', '>= 0.02';
+    requires 'Test::CPANfile', '>= 0.02';
     requires 'Devel::Cover::Report::Coveralls', '>= 0.11';
     requires 'Devel::Cover';
 };
