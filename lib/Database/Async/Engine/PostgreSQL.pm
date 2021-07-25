@@ -261,6 +261,48 @@ sub database_user {
     return $uri->user // 'postgres'
 }
 
+sub password_from_file {
+    my $self = shift;
+    my $pwfile = $ENV{PGPASSFILE} || File::HomeDir->my_home . '/.pgpass';
+
+    unless ($^O eq 'MSWin32') { # same as libpq
+        # libpq also does stat here instead of lstat. So, pgpass can be
+        # a logical link.
+        my (undef, undef, $mode) = stat $pwfile or return;
+        unless (-f _) {
+            warn "WARNING: password file \"$pwfile\" is not a plain file\n";
+            return;
+        }
+
+        if ($mode & 077) {
+            warn "WARNING: password file \"$pwfile\" has group or world access; permissions should be u=rw (0600) or less\n";
+            return;
+        }
+        # libpq has the same race condition of stat versus open.
+    }
+
+    open my $fh, '<', $pwfile or return;
+    while (defined(my $line = readline $fh)) {
+        next if $line =~ '^#';
+        chomp $line;
+        my ($host, $port, $db, $user, $pw) = ($line =~ /((?:\\.|[^:])*)(?::|$)/g)
+            or next;
+        s/\\(.)/$1/g for ($host, $port, $db, $user, $pw);
+        
+        return $pw if ($host eq '*' || $host eq $self->uri->host and
+                       $port eq '*' || $port eq $self->uri->port and
+                       $user eq '*' || $user eq $self->database_user and
+                       $db   eq '*' || $db   eq $self->database_name);
+    }
+
+    return
+}
+
+sub database_password {
+    my $self = shift;
+    return $self->uri->password // $ENV{PGPASSWORD} || $self->password_from_file
+}
+
 =head2 negotiate_ssl
 
 Apply SSL negotiation.
@@ -451,7 +493,7 @@ our %AUTH_HANDLER = (
             'PasswordMessage',
             user          => $self->encode_text($self->uri->user),
             password_type => 'plain',
-            password      => $self->encode_text($self->uri->password),
+            password      => $self->encode_text($self->database_password),
         );
     },
     AuthenticationMD5Password => sub {
@@ -461,7 +503,7 @@ our %AUTH_HANDLER = (
             user          => $self->encode_text($self->uri->user),
             password_type => 'md5',
             password_salt => $msg->password_salt,
-            password      => $self->encode_text($self->uri->password),
+            password      => $self->encode_text($self->database_password),
         );
     },
     AuthenticationSCMCredential => sub {
@@ -510,7 +552,7 @@ sub protocol {
                     my ($self, %args) = @_;
                     $log->tracef('Auth request received: %s', \%args);
                     $self->protocol->{user} = $self->uri->user;
-                    $self->protocol->send_message('PasswordMessage', password => $self->encode_text($self->uri->password));
+                    $self->protocol->send_message('PasswordMessage', password => $self->encode_text($self->database_password));
                 }),
                 parameter_status => $self->$curry::weak(sub {
                     my ($self, $msg) = @_;
