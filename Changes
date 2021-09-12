@@ -3,7 +3,7 @@ Revision history for {{$dist->name}}
 {{$NEXT}}
     [New features]
 
-    - pgpass support, thanks to Torsten Förstch
+    - pgpass support, thanks to Torsten Förtsch
     - can now specify `application_name` in engine config
     - disconnection notification (and active query termination) via ->connected method
 

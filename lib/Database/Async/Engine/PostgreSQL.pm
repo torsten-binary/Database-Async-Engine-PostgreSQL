@@ -943,6 +943,8 @@ a ->connection first
 
 Tom Molesworth C<< <TEAM@cpan.org> >>
 
+with contributions from Tortsten Förtsch C<< <OPI@cpan.org> >>
+
 =head1 LICENSE
 
 Copyright Tom Molesworth 2011-2021. Licensed under the same terms as Perl itself.
