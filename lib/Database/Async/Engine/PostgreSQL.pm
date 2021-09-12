@@ -300,7 +300,7 @@ sub password_from_file {
         my ($host, $port, $db, $user, $pw) = ($line =~ /((?:\\.|[^:])*)(?::|$)/g)
             or next;
         s/\\(.)/$1/g for ($host, $port, $db, $user, $pw);
-        
+
         return $pw if (
             $host eq '*' || $host eq $self->uri->host and
             $port eq '*' || $port eq $self->uri->port and
