@@ -163,12 +163,15 @@ async sub connect {
     die 'bad URI' unless ref $uri;
     $log->tracef('URI for connection is %s', "$uri");
     my $endpoint = join ':', $uri->host, $uri->port;
+
     $log->tracef('Will connect to %s', $endpoint);
     $self->{ssl} = do {
         my $mode = $uri->query_param('sslmode') // 'prefer';
         $Protocol::Database::PostgreSQL::Constants::SSL_NAME_MAP{$mode} // die 'unknown SSL mode ' . $mode;
     };
 
+    # We're assuming TCP (either v4 or v6) here, but there's not really any reason we couldn't have
+    # UNIX sockets or other transport layers here other than lack of demand so far.
     my $sock = await $loop->connect(
         service     => $uri->port,
         host        => $uri->host,
@@ -209,8 +212,13 @@ async sub connect {
     );
 
     $log->tracef('Send initial request with user %s', $uri->user);
+
+    # This is where the extensible options for initial connection are applied:
+    # we have already handled SSL by this point, so we exclude this from the
+    # list and pass everything else directly to the startup packet.
     my %qp = $uri->query_params;
     delete $qp{sslmode};
+
     $qp{application_name} //= $self->application_name;
     $self->protocol->send_startup_request(
         database         => $self->database_name,
