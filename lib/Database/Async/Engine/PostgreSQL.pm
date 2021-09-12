@@ -276,20 +276,24 @@ sub password_from_file {
     unless ($^O eq 'MSWin32') { # same as libpq
         # libpq also does stat here instead of lstat. So, pgpass can be
         # a logical link.
-        my (undef, undef, $mode) = stat $pwfile or return;
+        my (undef, undef, $mode) = stat $pwfile or return undef;
         unless (-f _) {
-            warn "WARNING: password file \"$pwfile\" is not a plain file\n";
-            return;
+            $log->warnf("WARNING: password file \"%s\" is not a plain file\n", $pwfile);
+            return undef;
         }
 
         if ($mode & 077) {
-            warn "WARNING: password file \"$pwfile\" has group or world access; permissions should be u=rw (0600) or less\n";
-            return;
+            $log->warnf("WARNING: password file \"%s\" has group or world access; permissions should be u=rw (0600) or less", $pwfile);
+            return undef;
         }
         # libpq has the same race condition of stat versus open.
     }
 
-    open my $fh, '<', $pwfile or return;
+    # It's not an error for this file to be missing: it might not
+    # be readable for various reasons, but for now we ignore that case as well
+    # (we've already checked for overly-lax permissions above)
+    open my $fh, '<', $pwfile or return undef;
+
     while (defined(my $line = readline $fh)) {
         next if $line =~ '^#';
         chomp $line;
@@ -297,13 +301,15 @@ sub password_from_file {
             or next;
         s/\\(.)/$1/g for ($host, $port, $db, $user, $pw);
         
-        return $pw if ($host eq '*' || $host eq $self->uri->host and
-                       $port eq '*' || $port eq $self->uri->port and
-                       $user eq '*' || $user eq $self->database_user and
-                       $db   eq '*' || $db   eq $self->database_name);
+        return $pw if (
+            $host eq '*' || $host eq $self->uri->host and
+            $port eq '*' || $port eq $self->uri->port and
+            $user eq '*' || $user eq $self->database_user and
+            $db   eq '*' || $db   eq $self->database_name
+        );
     }
 
-    return
+    return undef;
 }
 
 sub database_password {
