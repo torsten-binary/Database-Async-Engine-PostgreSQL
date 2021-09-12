@@ -4,7 +4,7 @@ package Database::Async::Engine::PostgreSQL;
 use strict;
 use warnings;
 
-our $VERSION = '0.011';
+our $VERSION = '0.012';
 
 use parent qw(Database::Async::Engine);
 
@@ -82,7 +82,7 @@ Database::Async::Engine->register_class(
 
 sub configure {
     my ($self, %args) = @_;
-    for (qw(service encoding)) {
+    for (qw(service encoding application_name)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
