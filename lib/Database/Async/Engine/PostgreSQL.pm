@@ -391,9 +391,17 @@ sub uri_for_dsn {
 sub uri_for_service {
     my ($class, $service) = @_;
     my $cfg = $class->find_service($service);
+
+    # Start with common default values (i.e. follow libpq behaviour unless there's a strong reason not to)
     my $uri = URI->new('postgresql://postgres@localhost/postgres');
+
+    # Standard fields supported by URI::pg
     $uri->$_(delete $cfg->{$_}) for grep exists $cfg->{$_}, qw(host port user password dbname);
+    # ... note that `hostaddr` takes precedence over plain `host`
     $uri->host(delete $cfg->{hostaddr}) if exists $cfg->{hostaddr};
+
+    # Everything else is handled via query parameters, this list is non-exhaustive and likely to be
+    # extended in future (e.g. text/binary protocol mode)
     $uri->query_param($_ => delete $cfg->{$_}) for grep exists $cfg->{$_}, qw(
         application_name
         fallback_application_name
