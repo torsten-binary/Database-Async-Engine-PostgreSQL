@@ -22,7 +22,7 @@ on 'test' => sub {
     requires 'Test::Fatal', '>= 0.010';
     requires 'Test::Refcount', '>= 0.07';
     requires 'Test::MockModule', '>= 0.171';
-    requires 'Test::Warnings', '>= 0.026';
+    requires 'Log::Any::Test', '>= 1.710';
     requires 'File::Temp';
 };
 

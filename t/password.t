@@ -3,7 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use Test::Warnings qw/warnings/;
+use Log::Any::Test;
+use Log::Any qw($log);
 use File::Temp;
 use Path::Tiny;
 
@@ -60,8 +61,9 @@ subtest 'PGPASSFILE' => sub {
     ]);
 
     unless ($^O eq 'MSWin32') {
-        my ($w) = warnings {$eng->database_password};
-        like $w, qr/permissions should be u=rw \(0600\) or less/, 'permission warning';
+        $log->clear;
+        $eng->database_password;
+        $log->contains_ok(qr/permissions should be u=rw \(0600\) or less/, 'permission warning');
         chmod 0600, $fh->filename;
     }
     is($eng->database_password, 'pgpass', 'PGPASSFILE wins over ~/.pgpass');
