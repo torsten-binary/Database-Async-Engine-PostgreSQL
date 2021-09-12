@@ -4,9 +4,13 @@ package Database::Async::Engine::PostgreSQL;
 use strict;
 use warnings;
 
+use utf8;
+
 our $VERSION = '0.012';
 
 use parent qw(Database::Async::Engine);
+
+=encoding utf8
 
 =head1 NAME
 
