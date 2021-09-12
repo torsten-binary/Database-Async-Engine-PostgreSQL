@@ -46,6 +46,7 @@ to localhost (similar to C<psql -h localhost> behaviour).
 =cut
 
 no indirect;
+use Syntax::Keyword::Try;
 use Ryu::Async;
 use Ryu::Observable;
 use curry;
@@ -155,6 +156,9 @@ async sub connect {
     my ($self) = @_;
     my $loop = $self->loop;
 
+    my $connected = $self->connected;
+    die 'We think we are already connected, and that is bad' if $connected->as_numeric;
+
     # Initial connection is made directly through the URI
     # parameters. Eventually we also want to support UNIX
     # socket and other types.
@@ -225,6 +229,7 @@ async sub connect {
         user             => $self->database_user,
         %qp
     );
+    $connected->set_numeric(1);
     return $stream;
 }
 
@@ -442,10 +447,20 @@ Expects the following parameters:
 sub on_read {
     my ($self, $stream, $buffref, $eof) = @_;
 
-    $log->tracef('Have server message of length %d', length $$buffref);
-    while(my $msg = $self->protocol->extract_message($buffref)) {
-        $log->tracef('Message: %s', $msg);
-        $self->incoming->emit($msg);
+    try {
+        $log->tracef('Have server message of length %d', length $$buffref);
+        while(my $msg = $self->protocol->extract_message($buffref)) {
+            $log->tracef('Message: %s', $msg);
+            $self->incoming->emit($msg);
+        }
+    } catch($e) {
+        # This really shouldn't happen, but since we can't trust our current state we should drop
+        # the connection ASAP, and avoid any chance of barrelling through to a COMMIT or other
+        # risky operation.
+        $log->errorf('Failed to handle read, connection is no longer in a valid state: %s', $e);
+        $self->close_now;
+    } finally {
+        $self->connected->set_numeric(0) if $eof;
     }
     return 0;
 }
@@ -486,6 +501,38 @@ L<Ryu::Source> representing incoming packets for the current database connection
 sub incoming {
     my ($self) = @_;
     $self->{incoming} //= $self->ryu->source;
+}
+
+=head2 connected
+
+A L<Ryu::Observable> which will be 1 while the connection is in a valid state,
+and 0 if we're disconnected.
+
+=cut
+
+sub connected {
+    my ($self) = @_;
+    $self->{connected} //= do {
+        my $obs = Ryu::Observable->new(0);
+        $obs->subscribe(
+            $self->$curry::weak(sub {
+                my ($self, $v) = @_;
+                # We only care about disconnection events
+                return if $v;
+
+                # If we were doing something, then it didn't work
+                if(my $query = delete $self->{active_query}) {
+                    $query->completed->fail('disconnected') unless $query->completed->is_ready;
+                }
+
+                # Tell the database pool management that we're no longer useful
+                if(my $db = $self->db) {
+                    $db->engine_disconnected($self);
+                }
+            })
+        );
+        $obs
+    };
 }
 
 =head2 authenticated
