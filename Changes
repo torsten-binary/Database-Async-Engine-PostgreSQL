@@ -1,6 +1,9 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
+    [New features]
+
+    - support for SCRAM-SHA256 authentication (required for recent PostgreSQL versions)
 
 0.012     2021-09-13 00:42:06+08:00 Asia/Kuala_Lumpur
     [New features]
