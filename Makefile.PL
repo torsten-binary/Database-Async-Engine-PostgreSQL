@@ -44,7 +44,7 @@ my %WriteMakefileArgs = (
     "File::Temp" => 0,
     "IO::Handle" => 0,
     "IPC::Open3" => 0,
-    "Log::Any::Adapter::TAP" => "1.050",
+    "Log::Any::Adapter::TAP" => 0,
     "Log::Any::Test" => "1.710",
     "Test::CheckDeps" => "0.010",
     "Test::Fatal" => "0.010",
@@ -52,7 +52,7 @@ my %WriteMakefileArgs = (
     "Test::More" => "0.98",
     "Test::Refcount" => "0.07"
   },
-  "VERSION" => "1.000",
+  "VERSION" => "1.001",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -74,7 +74,7 @@ my %FallbackPrereqs = (
   "IO::Handle" => 0,
   "IPC::Open3" => 0,
   "Log::Any" => "1.050",
-  "Log::Any::Adapter::TAP" => "1.050",
+  "Log::Any::Adapter::TAP" => 0,
   "Log::Any::Test" => "1.710",
   "MIME::Base64" => 0,
   "Path::Tiny" => 0,
